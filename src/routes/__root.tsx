@@ -5,6 +5,9 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import { BUSINESS } from "@/config/business";
+import { AuthProvider } from "@/lib/auth";
+import { Toaster } from "@/components/ui/sonner";
+import { OnboardingDialog } from "@/components/site/OnboardingDialog";
 
 function NotFoundComponent() {
   return (
@@ -37,10 +40,11 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Find your dream home or commercial space. Expert real estate brokerage for buying, selling, and renting residential & commercial properties.",
+          "Buy, sell, and rent residential and commercial properties in Purulia. Verified listings, trusted brokers, and a smarter way to find your next home.",
       },
       { name: "author", content: BUSINESS.name },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "theme-color", content: "#0e47a1" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -48,7 +52,7 @@ export const Route = createRootRoute({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap",
       },
     ],
   }),
@@ -73,13 +77,17 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <main className="flex-1">
-        <Outlet />
-      </main>
-      <Footer />
-      <WhatsAppButton />
-    </div>
+    <AuthProvider>
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        <Footer />
+        <WhatsAppButton />
+        <OnboardingDialog />
+        <Toaster richColors position="top-center" />
+      </div>
+    </AuthProvider>
   );
 }

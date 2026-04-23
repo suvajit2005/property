@@ -10,36 +10,191 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
-      contact_submissions: {
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          city: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          onboarded: boolean
+          owner_type: Database["public"]["Enums"]["owner_type"] | null
+          phone: string | null
+          preferences: Json
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          onboarded?: boolean
+          owner_type?: Database["public"]["Enums"]["owner_type"] | null
+          phone?: string | null
+          preferences?: Json
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          city?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          onboarded?: boolean
+          owner_type?: Database["public"]["Enums"]["owner_type"] | null
+          phone?: string | null
+          preferences?: Json
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          address: string | null
+          amenities: string[]
+          area_sqft: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          category: string | null
+          city: string
+          contact_phone: string | null
+          contact_whatsapp: string | null
+          created_at: string
+          description: string
+          floor_number: number | null
+          furnishing: string | null
+          id: string
+          images: string[]
+          is_featured: boolean
+          is_verified: boolean
+          latitude: number | null
+          listing_type: Database["public"]["Enums"]["listing_type"]
+          locality: string | null
+          longitude: number | null
+          owner_id: string
+          owner_type: Database["public"]["Enums"]["owner_type"]
+          pincode: string | null
+          price: number
+          property_type: Database["public"]["Enums"]["property_type"]
+          state: string
+          status: Database["public"]["Enums"]["property_status"]
+          title: string
+          total_floors: number | null
+          updated_at: string
+          views: number
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[]
+          area_sqft?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          category?: string | null
+          city?: string
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string
+          description: string
+          floor_number?: number | null
+          furnishing?: string | null
+          id?: string
+          images?: string[]
+          is_featured?: boolean
+          is_verified?: boolean
+          latitude?: number | null
+          listing_type: Database["public"]["Enums"]["listing_type"]
+          locality?: string | null
+          longitude?: number | null
+          owner_id: string
+          owner_type?: Database["public"]["Enums"]["owner_type"]
+          pincode?: string | null
+          price: number
+          property_type: Database["public"]["Enums"]["property_type"]
+          state?: string
+          status?: Database["public"]["Enums"]["property_status"]
+          title: string
+          total_floors?: number | null
+          updated_at?: string
+          views?: number
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[]
+          area_sqft?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          category?: string | null
+          city?: string
+          contact_phone?: string | null
+          contact_whatsapp?: string | null
+          created_at?: string
+          description?: string
+          floor_number?: number | null
+          furnishing?: string | null
+          id?: string
+          images?: string[]
+          is_featured?: boolean
+          is_verified?: boolean
+          latitude?: number | null
+          listing_type?: Database["public"]["Enums"]["listing_type"]
+          locality?: string | null
+          longitude?: number | null
+          owner_id?: string
+          owner_type?: Database["public"]["Enums"]["owner_type"]
+          pincode?: string | null
+          price?: number
+          property_type?: Database["public"]["Enums"]["property_type"]
+          state?: string
+          status?: Database["public"]["Enums"]["property_status"]
+          title?: string
+          total_floors?: number | null
+          updated_at?: string
+          views?: number
+        }
+        Relationships: []
+      }
+      saved_properties: {
         Row: {
           created_at: string
-          email: string
-          id: string
-          message: string
-          name: string
-          phone: string
+          property_id: string
+          user_id: string
         }
         Insert: {
           created_at?: string
-          email: string
-          id?: string
-          message: string
-          name: string
-          phone: string
+          property_id: string
+          user_id: string
         }
         Update: {
           created_at?: string
-          email?: string
-          id?: string
-          message?: string
-          name?: string
-          phone?: string
+          property_id?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "saved_properties_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -49,7 +204,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      listing_type: "sale" | "rent"
+      owner_type: "individual" | "broker"
+      property_status: "pending" | "active" | "sold" | "rented" | "inactive"
+      property_type: "residential" | "commercial"
+      user_role: "buyer" | "seller" | "broker" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -176,6 +335,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      listing_type: ["sale", "rent"],
+      owner_type: ["individual", "broker"],
+      property_status: ["pending", "active", "sold", "rented", "inactive"],
+      property_type: ["residential", "commercial"],
+      user_role: ["buyer", "seller", "broker", "admin"],
+    },
   },
 } as const

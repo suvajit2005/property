@@ -13,8 +13,13 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+      const missing = [];
+      if (!SUPABASE_URL) missing.push('SUPABASE_URL');
+      if (!SUPABASE_PUBLISHABLE_KEY) missing.push('SUPABASE_PUBLISHABLE_KEY');
+      console.error(`❌ Missing Supabase environment variables: ${missing.join(', ')}`);
+      console.error('📝 Check your .env.local file or environment setup.');
       throw new Response(
-        'Missing Supabase environment variables. Ensure SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY are set.',
+        `Internal Server Error: Missing environment variables (${missing.join(', ')}). Please check server configuration.`,
         { status: 500 }
       );
     }
