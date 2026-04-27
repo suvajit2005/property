@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { BUSINESS } from "@/config/business";
 import { useAuth } from "@/lib/auth";
+import { createProperty } from "@/integrations/supabase/database";
+import { uploadPropertyImages } from "@/integrations/supabase/storage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -151,24 +153,79 @@ function PostPropertyPage() {
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   const submit = async () => {
+    console.log("🚀 SUBMIT BUTTON CLICKED!");
+    console.log("Current step:", step);
+    console.log("Total steps:", STEPS.length);
+    console.log("Is final step?", step === STEPS.length - 1);
+    console.log("Form data:", form);
+    console.log("Submitting state:", submitting);
+
+    // Check if we're on the final step
+    if (step !== STEPS.length - 1) {
+      console.log("❌ Not on final step, cannot submit");
+      toast.error("Please complete all steps before submitting");
+      return;
+    }
+
     const err = validateStep();
-    if (err) { toast.error(err); return; }
-    if (!user) return;
+    console.log("Validation error:", err);
+    if (err) {
+      console.log("❌ Validation failed:", err);
+      toast.error(err);
+      return;
+    }
+
+    console.log("✅ Validation passed, proceeding with submission...");
+    if (!user) {
+      console.error("No user found - user is null");
+      toast.error("You must be logged in to post a property");
+      return;
+    }
+
+    console.log("User object:", user);
+    console.log("User ID:", user.id);
+
+    // Check if user session is valid
+    try {
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        console.error("Session error:", sessionError);
+        toast.error("Your session has expired. Please log in again.");
+        return;
+      }
+      if (!session) {
+        console.error("No active session");
+        toast.error("You must be logged in to post a property");
+        return;
+      }
+      console.log("Session is valid:", session.user.id);
+    } catch (sessionCheckError) {
+      console.error("Session check failed:", sessionCheckError);
+      toast.error("Authentication check failed. Please try again.");
+      return;
+    }
+
     setSubmitting(true);
     try {
-      // Upload images
-      const uploaded: string[] = [];
-      for (let i = 0; i < form.images.length; i++) {
-        const { file } = form.images[i];
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user.id}/${Date.now()}_${i}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("property-images").upload(path, file, { upsert: false });
-        if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("property-images").getPublicUrl(path);
-        uploaded.push(pub.publicUrl);
+      console.log("Starting property submission...");
+      console.log("Form data:", form);
+
+      // Upload images first to storage
+      console.log("Uploading images...");
+      const { urls: imageUrls, error: uploadError } = await uploadPropertyImages(
+        crypto.randomUUID(), // temporary ID for organizing uploads
+        form.images.map((image) => image.file),
+      );
+
+      if (uploadError || imageUrls.length === 0) {
+        console.error("Image upload failed:", uploadError);
+        throw new Error("Image upload failed. Please try again.");
       }
 
-      const { data, error } = await supabase.from("properties").insert({
+      console.log("Images uploaded successfully:", imageUrls);
+
+      // Create property with image URLs
+      const propertyPayload = {
         owner_id: user.id,
         owner_type: form.ownerType!,
         property_type: form.propertyType!,
@@ -191,17 +248,31 @@ function PostPropertyPage() {
         floor_number: form.floorNumber ? Number(form.floorNumber) : null,
         total_floors: form.totalFloors ? Number(form.totalFloors) : null,
         amenities: form.amenities,
-        images: uploaded,
+        images: imageUrls,
         contact_phone: form.contactPhone.trim(),
         contact_whatsapp: form.contactWhatsapp.trim() || form.contactPhone.trim(),
         status: "active",
-      }).select("id").single();
+      };
 
-      if (error) throw error;
+      console.log("Property payload:", propertyPayload);
+
+      const { data, error } = await createProperty(propertyPayload);
+
+      if (error) {
+        console.error("Property creation error:", error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error("No data returned from property creation");
+        throw new Error("Property creation failed - no data returned");
+      }
+
+      console.log("Property created successfully:", data);
       toast.success("Property posted successfully!");
       navigate({ to: "/properties/$id", params: { id: data.id } });
     } catch (e) {
-      console.error(e);
+      console.error("Submit error:", e);
       toast.error(e instanceof Error ? e.message : "Failed to post property");
     } finally {
       setSubmitting(false);
@@ -533,7 +604,7 @@ function PostPropertyPage() {
             {step < STEPS.length - 1 ? (
               <Button onClick={next}>Next <ChevronRight className="h-4 w-4" /></Button>
             ) : (
-              <Button onClick={submit} disabled={submitting} className="bg-orange text-orange-foreground hover:bg-orange/90">
+              <Button onClick={() => { console.log("Button clicked!"); submit(); }} disabled={submitting} className="bg-orange text-orange-foreground hover:bg-orange/90">
                 {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Posting…</> : <><Check className="h-4 w-4" /> Post Property</>}
               </Button>
             )}

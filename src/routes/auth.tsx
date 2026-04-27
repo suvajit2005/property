@@ -6,8 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
+import { signInWithEmail, signInWithOAuth, signUpWithEmail } from "@/integrations/supabase/auth";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
 
@@ -27,6 +26,18 @@ function AuthPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const getAuthErrorMessage = (message?: string) => {
+    if (!message) return "Something went wrong. Please try again.";
+    const normalized = message.toLowerCase();
+    if (normalized.includes("rate limit") || normalized.includes("too many requests")) {
+      return "Too many attempts. Please wait a few minutes and try again.";
+    }
+    if (normalized.includes("invalid login credentials")) {
+      return "Invalid email or password.";
+    }
+    return message;
+  };
+
   useEffect(() => {
     if (user) navigate({ to: "/dashboard" });
   }, [user, navigate]);
@@ -34,28 +45,28 @@ function AuthPage() {
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await signInWithEmail({ email, password });
     setLoading(false);
-    if (error) toast.error(error.message);
+    if (error) toast.error(getAuthErrorMessage(error.message));
     else { toast.success("Welcome back!"); navigate({ to: "/dashboard" }); }
   };
 
   const onSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/dashboard`, data: { full_name: name } },
-    });
+    const { error } = await signUpWithEmail({ email, password, displayName: name });
     setLoading(false);
-    if (error) toast.error(error.message);
-    else { toast.success("Account created! You're signed in."); navigate({ to: "/dashboard" }); }
+    if (error) toast.error(getAuthErrorMessage(error.message));
+    else {
+      toast.success("Account created. Check your email to confirm if required, then log in.");
+      setTab("login");
+      setPassword("");
+    }
   };
 
   const onGoogle = async () => {
-    const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
-    if (result.error) toast.error("Google sign-in failed");
+    const { error } = await signInWithOAuth("google");
+    if (error) toast.error(getAuthErrorMessage(error.message) || "Google sign-in failed");
   };
 
   return (
@@ -76,11 +87,11 @@ function AuthPage() {
             <form onSubmit={onLogin} className="mt-4 space-y-3">
               <div>
                 <Label htmlFor="le">Email</Label>
-                <Input id="le" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
+                <Input id="le" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
               </div>
               <div>
                 <Label htmlFor="lp">Password</Label>
-                <Input id="lp" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1" />
+                <Input id="lp" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1" />
               </div>
               <Button type="submit" disabled={loading} className="w-full">Login</Button>
             </form>
@@ -94,11 +105,11 @@ function AuthPage() {
               </div>
               <div>
                 <Label htmlFor="se">Email</Label>
-                <Input id="se" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
+                <Input id="se" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1" />
               </div>
               <div>
                 <Label htmlFor="sp">Password (min 8 chars)</Label>
-                <Input id="sp" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className="mt-1" />
+                <Input id="sp" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} className="mt-1" />
               </div>
               <Button type="submit" disabled={loading} className="w-full bg-orange text-orange-foreground hover:bg-orange/90">Create account</Button>
             </form>

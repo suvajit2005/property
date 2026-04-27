@@ -3,19 +3,18 @@ import { createMiddleware } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
+import { getSupabaseServerConfig } from './config'
 
 
 
 export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server(
   async ({ next }) => {
-    
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    const { url, anonKey } = getSupabaseServerConfig();
 
-    if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+    if (!url || !anonKey) {
       const missing = [];
-      if (!SUPABASE_URL) missing.push('SUPABASE_URL');
-      if (!SUPABASE_PUBLISHABLE_KEY) missing.push('SUPABASE_PUBLISHABLE_KEY');
+      if (!url) missing.push('SUPABASE_URL');
+      if (!anonKey) missing.push('SUPABASE_PUBLISHABLE_KEY');
       console.error(`❌ Missing Supabase environment variables: ${missing.join(', ')}`);
       console.error('📝 Check your .env.local file or environment setup.');
       throw new Response(
@@ -46,8 +45,8 @@ export const requireSupabaseAuth = createMiddleware({ type: 'function' }).server
     }
 
     const supabase = createClient<Database>(
-      SUPABASE_URL!,
-      SUPABASE_PUBLISHABLE_KEY!,
+      url,
+      anonKey,
       {
         global: {
           headers: {

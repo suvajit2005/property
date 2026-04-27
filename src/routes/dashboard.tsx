@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth";
-import { supabase } from "@/integrations/supabase/client";
+import { deletePropertyById, getPropertiesByOwner, getSavedPropertiesCount } from "@/integrations/supabase/database";
 import { BUSINESS } from "@/config/business";
 import { formatPrice } from "@/components/site/PropertyCard";
 import { toast } from "sonner";
@@ -45,8 +45,8 @@ function DashboardPage() {
     if (!user) return;
     setLoading(true);
     Promise.all([
-      supabase.from("properties").select("id,title,price,listing_type,property_type,city,locality,images,status,views,is_featured,created_at").eq("owner_id", user.id).order("created_at", { ascending: false }),
-      supabase.from("saved_properties").select("property_id", { count: "exact", head: true }).eq("user_id", user.id),
+      getPropertiesByOwner(user.id),
+      getSavedPropertiesCount(user.id),
     ])
       .then(([{ data, error: listError }, { count, error: countError }]) => {
         if (listError) {
@@ -73,7 +73,7 @@ function DashboardPage() {
 
   const deleteListing = async (id: string) => {
     if (!confirm("Delete this listing? This cannot be undone.")) return;
-    const { error } = await supabase.from("properties").delete().eq("id", id);
+    const { error } = await deletePropertyById(id);
     if (error) { toast.error(error.message); return; }
     setListings((l) => l.filter((p) => p.id !== id));
     toast.success("Listing deleted");
